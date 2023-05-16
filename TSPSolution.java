@@ -30,6 +30,13 @@ public class TSPSolution {
         for (Node node : nodes) {
             System.out.println("City " + node.getCity() + " - Total Distance: " + node.getTotalDistance());
         }
+
+        // Delay before the CMD window closes
+        try {
+            Thread.sleep(5000); // 5 seconds
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     static class Node extends Thread {
