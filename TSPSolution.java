@@ -1,77 +1,102 @@
-import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class TSPSolution {
+    private static final int BASE_PORT = 8000;
     private static final int NUM_CITIES = 4;
-    private static final int BASE_PORT = 5000;
 
     public static void main(String[] args) {
-        // Create and start nodes for each city
-        Node[] nodes = new Node[NUM_CITIES];
-        for (int i = 0; i < NUM_CITIES; i++) {
-            nodes[i] = new Node(i + 1);
-            nodes[i].start();
-        }
+        // Start the server on City 1
+        startServer(1);
 
-        // Wait for all nodes to finish
-        for (Node node : nodes) {
-            try {
-                node.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        // Display the final distances
-        for (Node node : nodes) {
-            System.out.println("City " + node.getCity() + " - Total Distance: " + node.getTotalDistance());
-        }
-
-        // Delay before the CMD window closes
-        try {
-            Thread.sleep(5000); // 5 seconds
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        // Connect to the other cities as clients
+        for (int city = 2; city <= NUM_CITIES; city++) {
+            connectToServer(city);
         }
     }
 
-    static class Node extends Thread {
+    private static void startServer(int city) {
+        new Thread(() -> {
+            try {
+                ServerSocket serverSocket = new ServerSocket(BASE_PORT + city);
+                System.out.println("City " + city + " is waiting for connections...");
+
+                while (true) {
+                    Socket socket = serverSocket.accept();
+                    new Thread(new CityHandler(socket, city)).start();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private static void connectToServer(int city) {
+        new Thread(() -> {
+            try {
+                Socket socket = new Socket("localhost", BASE_PORT + city);
+                System.out.println("Connected to City " + city);
+
+                DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
+                outputStream.writeInt(city);
+
+                DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+                int receivedValue = inputStream.readInt();
+
+                // Add the city number to the received value and forward it to all cities
+                forwardValue(city, receivedValue);
+
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private static void forwardValue(int senderCity, int value) {
+        if (senderCity <= NUM_CITIES) {
+            for (int city = 1; city <= NUM_CITIES; city++) {
+                if (city != senderCity) {
+                    try {
+                        Socket socket = new Socket("127.0.0.1", BASE_PORT + city);
+                        DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
+                        outputStream.writeInt(value + senderCity * 10 + city);
+                        socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } else {
+            // Last city, print the final result
+            System.out.println("Final result: " + value);
+        }
+    }
+
+    static class CityHandler implements Runnable {
+        private Socket socket;
         private int city;
-        private int totalDistance;
 
-        public Node(int city) {
+        public CityHandler(Socket socket, int city) {
+            this.socket = socket;
             this.city = city;
-        }
-
-        public int getCity() {
-            return city;
-        }
-
-        public int getTotalDistance() {
-            return totalDistance;
         }
 
         @Override
         public void run() {
             try {
-                ServerSocket serverSocket = new ServerSocket(BASE_PORT + city);
-                for (int i = 1; i <= NUM_CITIES; i++) {
-                    if (i != city) {
-                        Socket clientSocket = serverSocket.accept();
-                        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                        String received = in.readLine();
-                        int receivedValue = Integer.parseInt(received) + city * 10;
-                        totalDistance += receivedValue;
-                        out.println(receivedValue);
-                        clientSocket.close();
-                    }
-                }
-                serverSocket.close();
+                DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+                int receivedValue = inputStream.readInt();
+
+                // Add the city number to the received value and forward it to all cities
+                forwardValue(city, receivedValue);
+
+                DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
+                outputStream.writeInt(receivedValue);
+                socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
