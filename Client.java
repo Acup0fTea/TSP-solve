@@ -1,40 +1,42 @@
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
 
 public class Client {
     public static void main(String[] args) {
-        int cityId = Integer.parseInt(args[0]);
-
         try {
-            Socket socket = new Socket("192.168.1.136", 8080);
-            System.out.println("Connected to server. Sending city ID: " + cityId);
+            Socket socket = new Socket("localhost", 8080);
+            System.out.println("Connected to server.");
 
-            OutputStream outputStream = socket.getOutputStream();
-            outputStream.write(cityId);
-            outputStream.flush();
+            // Receive order of cities from server
+            InputStream is = socket.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            String line = reader.readLine();
+            int cityOrder = Integer.parseInt(line);
 
-            InputStream inputStream = socket.getInputStream();
-            int value = inputStream.read();
-            System.out.println("Received value: " + value);
+            // Update city order
+            int[] updatedOrder = new int[] { 10 + cityOrder, 20 + cityOrder, 30 + cityOrder, 40 + cityOrder };
 
-            // Increment the value
-            value += (cityId * 10);
+            // Send updated order of cities back to server
+            String message = updatedOrder[0] + "," + updatedOrder[1] + "," + updatedOrder[2] + "," + updatedOrder[3];
+            OutputStream os = socket.getOutputStream();
+            os.write(message.getBytes());
 
-            // Forward the incremented value to other cities
-            for (int i = 2; i <= 4; i++) {
-                Socket clientSocket = new Socket("192.168.1.136", 8080 + i - 1);
-                OutputStream clientOutputStream = clientSocket.getOutputStream();
-                clientOutputStream.write(value);
-                clientOutputStream.flush();
-                System.out.println("Sent value " + value + " to City " + i);
-                clientSocket.close();
+            // Receive TSP solution from server
+            line = reader.readLine();
+            String[] tspSolution = line.split(",");
+            int[] tsp = new int[4];
+            for (int i = 0; i < 4; i++) {
+                tsp[i] = Integer.parseInt(tspSolution[i]);
             }
 
-            socket.close();
-            System.out.println("Client " + cityId + " finished.");
+            // Print TSP solution
+            System.out.println("TSP Solution:");
+            for (int i = 0; i < 4; i++) {
+                System.out.println("City " + (i + 1) + ": " + tsp[i]);
+            }
 
+            // Close connection
+            socket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
