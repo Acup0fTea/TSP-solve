@@ -1,9 +1,9 @@
 FROM openjdk:11-jdk
 
+COPY TSPParallelBFS.java /app/TSPParallelBFS.java
+
 WORKDIR /app
 
-COPY TSPSolution.java /app
+RUN javac TSPParallelBFS.java
 
-RUN javac TSPSolution.java
-
-CMD ["java", "TSPSolution"]
+CMD ["java", "TSPParallelBFS"]
