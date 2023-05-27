@@ -3,24 +3,20 @@ import java.net.*;
 
 public class Client {
     public static void main(String[] args) {
-        if (args.length != 8) {
-            System.out.println("Invalid number of arguments. Please provide City Order and weights.");
+        if (args.length != 1) {
+            System.out.println("Invalid number of arguments. Please provide the city order.");
             return;
         }
+
+        int cityOrder = Integer.parseInt(args[0]);
 
         try {
             Socket socket = new Socket("localhost", 8080);
             System.out.println("Connected to server.");
 
             // Send City Order to server
-            String cityOrder = args[0] + "," + args[1] + "," + args[2] + "," + args[3];
             OutputStream os = socket.getOutputStream();
-            os.write(cityOrder.getBytes());
-            os.flush();
-
-            // Send weights to server
-            String weights = args[4] + "," + args[5] + "," + args[6] + "," + args[7];
-            os.write(weights.getBytes());
+            os.write((cityOrder + "").getBytes());
             os.flush();
 
             // Receive TSP solution from server
@@ -34,11 +30,11 @@ public class Client {
             }
 
             // Print TSP solution
-            System.out.println("TSP Solution:");
-            for (int i = 0; i < 4; i++) {
-                System.out.println("City " + tsp[i] + ": " + getShortestPath(args, tsp[i]));
-                System.out.println("Weight: " + getWeight(args, tsp[i]));
-            }
+            System.out.println("TSP Solution for City " + cityOrder + ":");
+            System.out.println("City " + tsp[0] + ": " + getShortestPath(tsp[0]));
+            System.out.println("City " + tsp[1] + ": " + getShortestPath(tsp[1]));
+            System.out.println("City " + tsp[2] + ": " + getShortestPath(tsp[2]));
+            System.out.println("City " + tsp[3] + ": " + getShortestPath(tsp[3]));
 
             // Close connection
             socket.close();
@@ -47,23 +43,21 @@ public class Client {
         }
     }
 
-    private static String getShortestPath(String[] args, int city) {
+    private static String getShortestPath(int city) {
+        String[] cities = { "A", "B", "C", "D" };
+        int[] weights = { 2, 3, 4, 1 };
         StringBuilder path = new StringBuilder();
         for (int i = 0; i < 4; i++) {
-            if (Integer.parseInt(args[i]) == city) {
-                path.append((char) ('A' + i));
+            if (i == city - 1) {
+                path.append(cities[i]);
                 break;
             }
         }
         for (int i = 0; i < 3; i++) {
-            int nextCity = Integer.parseInt(args[(i + 1) % 4]);
-            path.append(" -> ").append((char) ('A' + nextCity - 1));
+            int nextCity = (city + i) % 4 + 1;
+            path.append(" -> ").append(cities[nextCity - 1]).append(" (Weight: ").append(weights[nextCity - 1])
+                    .append(")");
         }
         return path.toString();
-    }
-
-    private static int getWeight(String[] args, int city) {
-        int index = 4 + city - 1;
-        return Integer.parseInt(args[index]);
     }
 }
