@@ -14,49 +14,40 @@ public class Server {
                 System.out.println("Client " + (i + 1) + " connected.");
             }
 
-            // Send order of cities to all clients
+            // Send city order to clients
             for (int i = 0; i < 4; i++) {
-                String message = String.valueOf(i + 1);
                 OutputStream os = clientSockets[i].getOutputStream();
-                os.write(message.getBytes());
+                os.write((i + 1 + "").getBytes());
             }
 
-            // Receive updated order of cities from clients
-            int[][] cityOrders = new int[4][4];
+            // Receive updated city order from clients
+            String[] cityOrder = new String[4];
             for (int i = 0; i < 4; i++) {
                 InputStream is = clientSockets[i].getInputStream();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                String line = reader.readLine();
-                String[] order = line.split(",");
-                for (int j = 0; j < 4; j++) {
-                    cityOrders[i][j] = Integer.parseInt(order[j]);
-                }
+                cityOrder[i] = reader.readLine();
             }
 
             // Calculate TSP solution
-            int[] tspSolution = calculateTSP(cityOrders);
-
-            // Send TSP solution back to clients
+            int[] tspSolution = new int[4];
             for (int i = 0; i < 4; i++) {
-                String message = "";
-                for (int j = 0; j < 4; j++) {
-                    message += tspSolution[j] + ",";
-                }
-                OutputStream os = clientSockets[i].getOutputStream();
-                os.write(message.getBytes());
+                tspSolution[i] = Integer.parseInt(cityOrder[i]) - 10;
             }
+
+            // Send TSP solution to clients
+            for (int i = 0; i < 4; i++) {
+                OutputStream os = clientSockets[i].getOutputStream();
+                os.write((tspSolution[0] + "," + tspSolution[1] + "," + tspSolution[2] + "," + tspSolution[3])
+                        .getBytes());
+            }
+
+            // Close connections
+            for (int i = 0; i < 4; i++) {
+                clientSockets[i].close();
+            }
+            serverSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private static int[] calculateTSP(int[][] cityOrders) {
-        // Perform TSP calculation here and return the solution
-        // You can use any suitable algorithm for solving TSP
-        // and update the code accordingly
-        // For simplicity, this example just returns the original order
-
-        int[] tspSolution = new int[] { 1, 2, 3, 4 };
-        return tspSolution;
     }
 }
