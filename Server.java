@@ -93,9 +93,12 @@ public class Server {
             int distance = city;
             for (int i = 0; i < NUM_CITIES - 1; i++) {
                 distance += neighbors.size() + 1;
-                sb.append("node ").append(city).append(": ").append(distance).append("\n");
+                sb.append("node ").append(city).append(": ").append(distance);
+                if (i < NUM_CITIES - 2) {
+                    sb.append(" -> ");
+                }
             }
-            System.out.println("Distance: " + sb.toString());
+            System.out.println("Distances for Node " + city + ": " + sb.toString());
         }
     }
 }
