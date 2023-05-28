@@ -11,34 +11,42 @@ public class Server {
             Socket[] clientSockets = new Socket[4];
             for (int i = 0; i < 4; i++) {
                 clientSockets[i] = serverSocket.accept();
-                System.out.println("Client " + (i + 1) + " connected.");
+                System.out.println("Accepted connection from Client " + (i + 1) + ": " + clientSockets[i]);
             }
 
             // Send city order to clients
             for (int i = 0; i < 4; i++) {
                 OutputStream os = clientSockets[i].getOutputStream();
                 os.write((i + 1 + "").getBytes());
+                os.flush();
+                System.out.println("Sent city order to Client " + (i + 1));
             }
 
-            // Receive updated city order from clients
-            String[] cityOrder = new String[4];
-            for (int i = 0; i < 4; i++) {
-                InputStream is = clientSockets[i].getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                cityOrder[i] = reader.readLine();
-            }
-
-            // Calculate TSP solution
+            // Receive TSP solution from clients
             int[] tspSolution = new int[4];
             for (int i = 0; i < 4; i++) {
-                tspSolution[i] = Integer.parseInt(cityOrder[i]) - 10;
+                InputStream is = clientSockets[i].getInputStream();
+                StringBuilder tspSolutionStr = new StringBuilder();
+                int character;
+                while ((character = is.read()) != -1) {
+                    if (character == '\n') {
+                        break;
+                    }
+                    tspSolutionStr.append((char) character);
+                }
+                String[] tspSolutionParts = tspSolutionStr.toString().split(",");
+                tspSolution[i] = Integer.parseInt(tspSolutionParts[i]);
+                System.out.println("Received TSP solution from Client " + (i + 1) + ": " + tspSolutionStr);
             }
 
             // Send TSP solution to clients
             for (int i = 0; i < 4; i++) {
                 OutputStream os = clientSockets[i].getOutputStream();
-                os.write((tspSolution[0] + "," + tspSolution[1] + "," + tspSolution[2] + "," + tspSolution[3])
-                        .getBytes());
+                String tspSolutionStr = tspSolution[0] + "," + tspSolution[1] + "," + tspSolution[2] + ","
+                        + tspSolution[3] + "\n";
+                os.write(tspSolutionStr.getBytes());
+                os.flush();
+                System.out.println("Sent TSP solution to Client " + (i + 1) + ": " + tspSolutionStr);
             }
 
             // Close connections

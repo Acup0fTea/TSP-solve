@@ -18,18 +18,28 @@ public class Client {
             OutputStream os = socket.getOutputStream();
             os.write((cityOrder + "").getBytes());
             os.flush();
+            System.out.println("Sent City Order to server.");
 
             // Receive TSP solution from server
             InputStream is = socket.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            String line = reader.readLine();
-            String[] tspSolution = line.split(",");
+
+            StringBuilder response = new StringBuilder();
+            int character;
+            while ((character = is.read()) != -1) {
+                if (character == '\n') {
+                    break;
+                }
+                response.append((char) character);
+            }
+
+            String[] tspSolution = response.toString().split(",");
             int[] tsp = new int[4];
             for (int i = 0; i < 4; i++) {
                 tsp[i] = Integer.parseInt(tspSolution[i]);
             }
 
             // Print TSP solution
+            System.out.println("Received TSP Solution from server.");
             System.out.println("TSP Solution for City " + cityOrder + ":");
             System.out.println("City " + tsp[0] + ": " + getShortestPath(tsp[0]));
             System.out.println("City " + tsp[1] + ": " + getShortestPath(tsp[1]));
@@ -38,6 +48,7 @@ public class Client {
 
             // Close connection
             socket.close();
+            System.out.println("Connection closed.");
         } catch (IOException e) {
             e.printStackTrace();
         }
