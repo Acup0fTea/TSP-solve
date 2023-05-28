@@ -15,43 +15,50 @@ public class Client {
             System.out.println("Connected to server.");
 
             // Send City Order to server
-            OutputStream os = socket.getOutputStream();
-            os.write((cityOrder + "").getBytes());
-            os.flush();
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            writer.write(cityOrder + "\n");
+            writer.flush();
             System.out.println("Sent City Order to server.");
 
-            // Receive TSP solution from server
-            InputStream is = socket.getInputStream();
+            // Receive City Order from server
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String receivedCityOrderStr = reader.readLine();
+            int receivedCityOrder = Integer.parseInt(receivedCityOrderStr);
+            System.out.println("Received City Order from server: " + receivedCityOrder);
 
-            StringBuilder response = new StringBuilder();
-            int character;
-            while ((character = is.read()) != -1) {
-                if (character == '\n') {
-                    break;
-                }
-                response.append((char) character);
-            }
+            // Calculate TSP solution
+            int tspSolution = calculateTSP(cityOrder);
 
-            String[] tspSolution = response.toString().split(",");
-            int[] tsp = new int[4];
-            for (int i = 0; i < 4; i++) {
-                tsp[i] = Integer.parseInt(tspSolution[i]);
+            // Send TSP solution to server
+            writer.write(tspSolution + "\n");
+            writer.flush();
+            System.out.println("Sent TSP solution to server.");
+
+            // Receive complete TSP solution from server
+            String tspSolutionStr = reader.readLine();
+            String[] tspSolutionParts = tspSolutionStr.split(",");
+            int[] completeSolution = new int[4];
+            for (int i = 0; i < tspSolutionParts.length; i++) {
+                completeSolution[i] = Integer.parseInt(tspSolutionParts[i]);
             }
+            System.out.println("Received complete TSP solution from server: " + tspSolutionStr);
 
             // Print TSP solution
-            System.out.println("Received TSP Solution from server.");
             System.out.println("TSP Solution for City " + cityOrder + ":");
-            System.out.println("City " + tsp[0] + ": " + getShortestPath(tsp[0]));
-            System.out.println("City " + tsp[1] + ": " + getShortestPath(tsp[1]));
-            System.out.println("City " + tsp[2] + ": " + getShortestPath(tsp[2]));
-            System.out.println("City " + tsp[3] + ": " + getShortestPath(tsp[3]));
+            for (int i = 0; i < completeSolution.length; i++) {
+                System.out.println("City " + (i + 1) + ": " + getShortestPath(completeSolution[i]));
+            }
 
             // Close connection
             socket.close();
-            System.out.println("Connection closed.");
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static int calculateTSP(int cityOrder) {
+        // Replace this with your actual TSP calculation logic
+        return cityOrder;
     }
 
     private static String getShortestPath(int city) {
